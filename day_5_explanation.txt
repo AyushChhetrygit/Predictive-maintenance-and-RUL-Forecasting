@@ -1,0 +1,111 @@
+=========================================================
+DAY 5: Anomaly Detection System - Detailed Explanation
+=========================================================
+
+---------------------------------------------------------
+1. OVERVIEW: WHAT WE DID IN DAY 5
+---------------------------------------------------------
+The primary goal for Day 5 was to build a machine learning pipeline that can detect "anomalies" or unusual patterns in engine sensors. We did this using two popular unsupervised learning models:
+1. Isolation Forest (IForest) 
+2. Local Outlier Factor (LOF)
+
+We used a Python library called "PyOD" (Python Outlier Detection), which specializes in anomaly detection tasks. The main challenge here was that our dataset does not explicitly tell us what is "normal" and what is an "anomaly." We had to use our own logic to label normal data vs. broken data.
+
+---------------------------------------------------------
+2. STEPS TAKEN BEFORE WRITING THE CODE
+---------------------------------------------------------
+Before running the machine learning script, we created an isolated environment to cleanly run our code.
+1. We created the `~/airflow_pm` folder structure.
+2. We generated a virtual environment using `python3 -m venv venv`. This is like a private playground for Python where we can install libraries without affecting your computer's main software.
+3. We activated the environment and ran `pip install numpy pandas scikit-learn pyod matplotlib seaborn joblib` to install the data science, machine learning, and plotting libraries needed for your script.
+
+---------------------------------------------------------
+3. LINE-BY-LINE CODE EXPLANATION
+---------------------------------------------------------
+
+# STEP 3: Load Your Data
+```python
+df = pd.read_pickle('../data/features.pkl')
+```
+- What it does: This loads the dataset you prepared in Day 4 into a Pandas "DataFrame" (a table-like structure). We used the pickle (.pkl) format because it loads large tables much faster than CSVs.
+
+# STEP 4: Define Normal Data
+```python
+df['RUL'] = df.groupby('engine_id')['cycle'].transform(lambda x: x.max() - x)
+normal_df = df[df['RUL'] > 50]
+test_df = df.copy()
+```
+- What it does: First, we calculate the 'Remaining Useful Life' (RUL). For an engine, this is how many 'cycles' it has left before failing. 
+- Since we don't have labeled anomalies, we rely on a rule: If the engine has more than 50 cycles left before failing, it's considered entirely healthy ("NORMAL"). We separate this healthy data into `normal_df`.
+- Because unsupervised anomaly detectors should ONLY be trained on normal data to understand what peace and quiet look like, we separate `normal_df`. 
+- `test_df` holds the full data (both normal and failing data) so we can test the models later.
+
+# STEP 5: Select Features
+```python
+features = [col for col in df.columns if 'sensor' in col]
+X_train = normal_df[features].fillna(0)
+X_test = test_df[features].fillna(0)
+```
+- What it does: We filter the columns to keep ONLY our sensor readings (discarding IDs or Cycles). `fillna(0)` replaces any missing or empty data points with a zero so the models don't crash. `X_train` becomes our normal training data, and `X_test` becomes the final testing data.
+
+# STEP 6: Train Isolation Forest (PyOD)
+```python
+iforest = IForest(contamination=0.05)
+iforest.fit(X_train)
+y_pred_iforest = iforest.predict(X_test)
+```
+- What it does: Isolation Forest is an algorithm that finds anomalies by randomly splitting data. Normal data points are packed tightly together, while anomalies are outcasts (isolated easily).
+- `contamination=0.05` tells the model to expect about 5% of the data to be outliers.
+- `predict(X_test)` returns 0 for normal readings, and 1 for anomalies.
+
+# STEP 7: Train Local Outlier Factor (PyOD)
+```python
+lof = LOF(n_neighbors=20, contamination=0.05)
+lof.fit(X_train)
+y_pred_lof = lof.predict(X_test)
+```
+- What it does: LOF checks the local neighborhood of a data point. If a point's neighbors are far away compared to a regular data point, it assumes the point is an outlier. It also returns exactly 0 (normal) or 1 (anomaly).
+
+# STEP 8: Combine Predictions
+```python
+final_pred = np.logical_or(y_pred_iforest, y_pred_lof).astype(int)
+df['anomaly'] = final_pred
+```
+- What it does: This is an "ensemble" approach. If EITHER the Isolation Forest OR the LOF model tags a sensor reading as an anomaly (1), we accept it as an anomaly. `np.logical_or` executes this logic. This increases our chance of catching failures in advance.
+
+# STEP 9: Evaluate
+```python
+df['true_anomaly'] = (df['RUL'] < 20).astype(int)
+print(classification_report(df['true_anomaly'], df['anomaly']))
+```
+- What it does: To test if our models are accurate, we create a "pseudo ground truth." We assume that any engine with less than 20 cycles remaining (`RUL < 20`) is actually facing an anomaly. Then, we compare this assumption with the model predictions (`df['anomaly']`) and print a report showing precision, recall, and accuracy scores.
+
+# STEP 10: Visualize
+```python
+plt.scatter(df['cycle'], df['sensor_1'], c=df['anomaly'], cmap='coolwarm')
+plt.savefig('../models/anomaly_plot.png')
+```
+- What it does: It draws a scatter plot graph plotting the engine cycle against the first sensor's values. It colors the dots dynamically (blue for normal, red for anomalies detected by our models) so you can visually verify if the models are correctly catching odd spikes. We save it to a file directly.
+
+# STEP 11: Save Model
+```python
+joblib.dump(iforest, '../models/iforest.pkl')
+joblib.dump(lof, '../models/lof.pkl')
+```
+- What it does: Training a machine learning model takes time. Joblib packages up the "learned brains" of our Isolation Forest and LOF and saves them as files on the hard drive. Tomorrow, or in production, we can simply load these `.pkl` files and start predicting anomalies in seconds without having to retrain from scratch.
+
+
+---------------------------------------------------------
+4. THE FINAL OUTPUT: WHAT ACTUALLY HAPPENED?
+---------------------------------------------------------
+When we hit "run" on this script, three important things were produced:
+
+1. THE CONSOLE OUTPUT (THE REPORT)
+The script outputted a Classification Report. 
+It showed metrics like Precision, Recall, and Accuracy. For instance, it showed exactly how many anomalies the combined models successfully managed to identify compared to our RUL < 20 rule.
+
+2. THE VISUAL GRAPH (THE PLOT)
+In your `~/airflow_pm/models/` folder, an image named `anomaly_plot.png` was successfully created. If you open this image, you will see a trendline of your sensor data, with clear red clustered dots pointing out where the machine learning model flagged the machine’s behavior as 'anomalous'. 
+
+3. THE SAVED MODELS (THE BRAINS)
+Also in `~/airflow_pm/models/`, two files were created: `iforest.pkl` and `lof.pkl`. These hold the trained mathematical states of the algorithms. When your Apache Airflow DAG runs down the road, it will look for these two files, boot them up, and use them to predict engine failures automatically. 

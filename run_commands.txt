@@ -1,0 +1,42 @@
+# ========================================================
+# COMMANDS TO RUN THE DAY 5 ANOMALY DETECTION SCRIPT
+# ========================================================
+
+# Open your terminal and copy-paste these commands step-by-step:
+
+# 1. Navigate into the correct folder
+cd /Users/ayushchhetry/logicveda/airflow_pm
+
+# 2. Activate the isolated Python virtual environment 
+# (You should see '(venv)' appear at the start of your terminal prompt)
+source venv/bin/activate
+
+# 3. Run the machine learning script
+python3 scripts/anomaly_model.py
+
+# ========================================================
+# WHAT TO EXPECT AFTER RUNNING:
+# ========================================================
+# - It will print the metrics/classification report in the terminal.
+# - The models (iforest.pkl and lof.pkl) will save to the "models" folder.
+# - The graph output (anomaly_plot.png) will also save to the "models" folder.
+
+# 4. (Optional) Once you are completely done and want to exit the virtual environment, run:
+deactivate
+
+# ========================================================
+# COMMANDS TO RUN THE DAY 6 LSTM AUTOENCODER SCRIPT
+# ========================================================
+
+# If you haven't activated your environment, run:
+# source venv/bin/activate
+
+# 5. Run the deep learning script
+python3 scripts/lstm_autoencoder.py
+
+# ========================================================
+# WHAT TO EXPECT AFTER RUNNING:
+# ========================================================
+# - It will print the training epochs and loss for the LSTM Autoencoder.
+# - It will output evaluation metrics comparing LSTM, Z-Score, and MAD.
+# - The model will be saved as "models/lstm_autoencoder.pth".

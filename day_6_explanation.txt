@@ -1,0 +1,24 @@
+# DAY 6 — LSTM AUTOENCODER & ANOMALY DETECTION
+
+## What We Did Today
+In this step, we built a deep learning model to detect anomalies using an LSTM Autoencoder. 
+
+### Why LSTM Autoencoders?
+Unlike traditional statistical methods, which look at single snapshots of data independently, LSTMs (Long Short-Term Memory networks) are designed for sequential data. Sensor data from engines isn't just about a single moment; it's about the sequence of events leading up to that moment. An LSTM can understand the temporal patterns and trends across time.
+
+### How it Works
+1. **The Encoder:** Takes the normal data sequences and compresses them into a smaller, hidden representation.
+2. **The Decoder:** Takes that hidden representation and tries to reconstruct the original sequences.
+3. **Training:** We train the model ONLY on "normal" data (when the engine is healthy, meaning RUL > 50). The model becomes very good at reconstructing normal patterns.
+4. **Anomaly Detection:** When we pass "abnormal" data (data closer to failure) into the model, the model struggles to reconstruct it because it has never seen it before. The difference between the input and the reconstruction is the **Reconstruction Error**.
+5. **Thresholding:** If the reconstruction error is higher than a certain threshold (e.g., the 95th percentile of errors), we flag it as an anomaly!
+
+### Sequence Bug Fix
+In the initial logic, creating sequences from the entire dataset without separating by `engine_id` meant the model was learning sequences that jumped from the end of one engine's life directly to the beginning of the next engine's life. We updated the `create_sequences` function to process each engine independently, preventing invalid data crossovers!
+
+### Comparing to Baselines (Z-score & MAD)
+To prove the value of our Deep Learning approach, we compared the LSTM's predictions against simple statistical methods:
+- **Z-score:** Checks if a data point is further than 3 standard deviations from the mean.
+- **MAD (Median Absolute Deviation):** A more robust version of Z-score that uses medians instead of means, making it less sensitive to extreme outliers.
+
+By looking at the evaluation metrics (Precision, Recall, F1-score), we can see how the LSTM often outperforms basic statistical thresholds because it understands time-series sequences.

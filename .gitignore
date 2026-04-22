@@ -1,0 +1,20 @@
+# Environments
+venv/
+.env
+
+# MacOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data & Models (Avoid uploading large files to GitHub)
+data/*.pkl
+data/*.csv
+models/*.pth
+models/*.pkl
+
+# Airflow specific
+logs/
