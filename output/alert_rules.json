@@ -1,0 +1,18 @@
+[
+    {
+        "metric": "sensor_14",
+        "condition": "Less Than (<)",
+        "threshold": 5.0,
+        "severity": "Low",
+        "channels": [],
+        "contacts": "admin@logicveda.com"
+    },
+    {
+        "metric": "sensor_11",
+        "condition": "Less Than (<)",
+        "threshold": 4.0,
+        "severity": "High",
+        "channels": [],
+        "contacts": "admin@logicveda.com"
+    }
+]
