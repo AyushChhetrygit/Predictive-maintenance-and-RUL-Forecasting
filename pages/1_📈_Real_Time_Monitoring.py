@@ -7,7 +7,6 @@ import os
 st.set_page_config(page_title="Real-Time Monitoring", layout="wide")
 st.title("📈 Real-Time Sensor Monitoring")
 
-@st.cache_data
 def load_data():
     try:
         df = pd.read_pickle('data/features.pkl')

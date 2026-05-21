@@ -69,7 +69,7 @@ def generate_drift_report():
         
     except Exception as e:
         st.error(f"Error generating report: {str(e)}")
-        return None
+        raise e
 
 with st.spinner("Generating Weekly Data Drift Report... (This may take a minute)"):
     report_file = generate_drift_report()
